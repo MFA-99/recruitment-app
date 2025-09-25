@@ -1,5 +1,5 @@
 import os
-from joblib import load
+import joblib
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -334,4 +334,5 @@ elif st.session_state.page == "riwayat":
         if st.button("Clear"):
             st.session_state.history = []
             save_history()
+
 
