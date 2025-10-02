@@ -3,12 +3,11 @@ import joblib
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.graph_objects as go
+import plotly.express as px
 
 # ===================== Page Config =====================
 st.set_page_config(page_title="Recruitment Prediction App", layout="wide")
 ACCENT_COLOR = "#1F3A93"
-HISTORY_FILE = "history.csv"
 
 # ===================== Load Font Awesome =====================
 st.markdown("""
@@ -18,12 +17,6 @@ st.markdown("""
 # ===================== CSS Custom =====================
 st.markdown("""
 <style>
-/* ===== Body ===== */
-body {
-    font-family: 'Arial', sans-serif;
-}
-
-/* ===== Topbar ===== */
 .topbar {
     display: flex;
     justify-content: space-between;
@@ -35,38 +28,27 @@ body {
     font-size: 30px;
     border-radius: 12px;
 }
-.topbar .icon {
-    font-size: 30px;
-    color: white;
-}
-
-/* ===== Hero Title ===== */
+.topbar .icon { font-size: 30px; color: white; }
 .hero-title {
     text-align: center;
-    font-size: 50px;
+    font-size: 40px;
     font-weight: bold;
     color: white;
     background: linear-gradient(to right, #2b1e77, #6a0dad);
     padding: 20px;
     border-radius: 18px;
-    margin: 25px auto;
+    margin: 15px auto;
     width: 85%;
 }
-.hero-title i {
-    margin-right: 10px;
-}
-
-/* ===== Instruction Box ===== */
+.hero-title i { margin-right: 10px; }
 .instruction-box {
-    background: linear-gradient(to right, #2b1e77, #6a0dad);
-    color: white;
+    background: #D8E6F4;
+    color: #000;
     padding: 15px;
     border-radius: 12px;
-    font-size: 20px;
-    margin: 15px 0;
+    font-size: 16px;
+    margin: 10px 0;
 }
-
-/* ===== Buttons ===== */
 .stButton>button {
     background: linear-gradient(to right, #6a0dad, #2b1e77);
     color: white;
@@ -74,70 +56,18 @@ body {
     border-radius: 25px;
     padding: 10px 24px;
     border: none;
-    font-size: 28px;
+    font-size: 20px;
     cursor: pointer;
     width: 100%;
 }
-.stButton>button:hover {
-    opacity: 0.9;
-}
-
-/* ===== Result Box ===== */
-.result-box {
-    background: linear-gradient(to right, #2b1e77, #6a0dad);
-    color: white;
-    padding: 20px;
-    border-radius: 15px;
-    text-align: center;
-    font-size: 24px;
-    margin: 15px 0;
-    font-weight: bold;
-}
-
-/* ===== Input Form ===== */
-label, .stMarkdown p {
-    font-size: 18px !important;
-    font-weight: bold;
-}
-.stTextInput>div>div>input,
-.stNumberInput>div>div>input,
-.stSelectbox>div>div,
-.stSlider>div>div {
-    font-size: 18px !important;
-    height: 45px !important;
-}
-.stNumberInput button {
-    font-size: 18px !important;
-    height: 45px !important;
-    width: 45px !important;
-}
-
-/* ===== Table Riwayat ===== */
-.tbl-header {
-    background-color: #E6E6FA;
-    font-weight: bold;
-    text-align: center;
-    border: 1px solid #ccc;
-    padding: 10px;
-}
-.tbl-cell {
-    border: 1px solid #ccc;
-    padding: 6px;
-    text-align: center;
-    font-size: 16px;
-}
-
-/* ===== Delete Button Icon ===== */
-.delete-btn {
-    background: transparent;
-    color: red;
-    border: none;
-    cursor: pointer;
-    font-size: 18px;
-    padding: 0;
-}
-.delete-btn:hover {
-    color: darkred;
+.stButton>button:hover { opacity: 0.9; }
+.tbl-header { font-weight:bold; text-align:center; border:1px solid #ccc; padding:8px; background:#E6E6FA;}
+.tbl-cell { border:1px solid #ccc; padding:6px; text-align:center; font-size:16px; }
+.status-accepted { background-color: #D8F4D7; color:green; font-weight:bold; }
+.status-rejected { background-color: #FADBD8; color:red; font-weight:bold; }
+[data-baseweb="radio"] label {
+    color: white !important;
+    font-weight: bold !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -156,12 +86,50 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown("""
-<p style="text-align:center; font-size:18px; font-weight:bold;">
-Aplikasi untuk membantu perusahaan menyeleksi kandidat lebih cepat, objektif,
-dan efisien, sehingga menghemat waktu serta biaya dalam pengambilan keputusan.
-</p>
+# ===================== Sidebar =====================
+st.sidebar.markdown("""
+<div style="
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding: 20px;
+    border-radius: 12px;
+    background: linear-gradient(to bottom, #2b1e77, #6a0dad);
+    color: white;
+">
+    <h3 style='font-weight:bold; margin-bottom:15px;'>Recruitment Prediction</h3>
+    <div style='background: #FFFFFF;
+                color: #000;
+                padding: 15px;
+                border-radius: 12px;
+                font-size: 16px;
+                margin-top: 10px;
+                width: 90%;
+                text-align:center;'>
+        Aplikasi ini membantu proses rekrutmen agar lebih efisien dan objektif.
+    </div>
+    <div style='background: #FFFFFF;
+                color: #000;
+                padding: 15px;
+                border-radius: 12px;
+                font-size: 16px;
+                margin-top: 10px;
+                width: 90%;
+                text-align:center;'>
+        Fokus utamanya adalah mendukung tahap akhir seleksi dengan memanfaatkan data penilaian kandidat untuk keputusan penerimaan yang lebih tepat.
+    </div>
+</div>
+
+<div style="margin-top: 20px;">
+    <p style='color:black; font-weight:bold; margin-bottom:5px;'>Pilih Halaman</p>
+</div>
 """, unsafe_allow_html=True)
+
+# Radio button halaman
+page_options = ["Input Data", "Prediksi", "EDA"]
+page = st.sidebar.radio("", page_options, label_visibility="collapsed")
 
 # ===================== Load Model & Scaler =====================
 model, scaler = None, None
@@ -171,168 +139,139 @@ if os.path.exists("best_catboost_optuna.joblib") and os.path.exists("scaler.jobl
 else:
     st.warning("⚠ File model atau scaler tidak ditemukan. Prediksi tidak bisa dijalankan.")
 
-# ===================== Preprocessing Function =====================
-def preprocess_input(data, scaler):
-    numeric_columns = ['ExperienceYears', 'InterviewScore', 'SkillScore', 'PersonalityScore']
-    df = pd.DataFrame([data])
-    recruitment_strategy_map = {'Referral':[1,0,0],'Job Fair':[0,1,0],'Outsourcing':[0,0,1]}
-    recruitment_cols = ['RecruitmentStrategy_1','RecruitmentStrategy_2','RecruitmentStrategy_3']
-    df[recruitment_cols] = recruitment_strategy_map[data['RecruitmentStrategy']]
+# ===================== Preprocess =====================
+def preprocess_input(df, scaler):
+    numeric_cols = ['ExperienceYears','InterviewScore','SkillScore','PersonalityScore']
     df['TotalScore'] = df['SkillScore'] + df['InterviewScore'] + df['PersonalityScore']
     df['Skill_Experience_Interaction'] = df['SkillScore'] * df['ExperienceYears']
-    df[numeric_columns] = scaler.transform(df[numeric_columns])
-    selected_features = [
-        'EducationLevel','ExperienceYears','InterviewScore','SkillScore',
-        'PersonalityScore','RecruitmentStrategy_1','RecruitmentStrategy_2',
-        'TotalScore','Skill_Experience_Interaction','RecruitmentStrategy_3'
-    ]
+
+    # One-hot recruitment
+    rec_map = {1:[1,0,0], 2:[0,1,0], 3:[0,0,1]}
+    rec_cols = ['RecruitmentStrategy_1','RecruitmentStrategy_2','RecruitmentStrategy_3']
+    df[rec_cols] = df['RecruitmentStrategy'].map(lambda x: rec_map.get(x,[0,0,0])).apply(pd.Series)
+
+    # Normalisasi numeric tetap di balik layar
+    df[numeric_cols] = scaler.transform(df[numeric_cols])
+
+    selected_features = ['EducationLevel','ExperienceYears','InterviewScore','SkillScore','PersonalityScore',
+                         'TotalScore','RecruitmentStrategy_1','RecruitmentStrategy_2','RecruitmentStrategy_3',
+                         'Skill_Experience_Interaction']
     return df[selected_features]
 
-# ===================== Load & Save History =====================
-def load_history():
-    if os.path.exists(HISTORY_FILE):
-        try:
-            df = pd.read_csv(HISTORY_FILE)
-            if df.empty or df.columns.size == 0: return []
-            return df.to_dict("records")
-        except pd.errors.EmptyDataError:
-            return []
-    else:
-        return []
+# ===================== Halaman Input Data =====================
+if page == "Input Data":
+    st.markdown("<h2 style='text-align:center; background:linear-gradient(to right,#2b1e77,#6a0dad); color:white; padding:12px; border-radius:12px;'><i class='fas fa-file-upload'></i> Input Data Kandidat</h2>", unsafe_allow_html=True)
 
-def save_history():
-    pd.DataFrame(st.session_state.history).to_csv(HISTORY_FILE, index=False)
-
-# ===================== Session State =====================
-if "page" not in st.session_state: st.session_state.page = "main"
-if "history" not in st.session_state: st.session_state.history = load_history()
-
-# ===================== Halaman Utama =====================
-if st.session_state.page == "main":
-    st.markdown("<h2 style='text-align:center;'>📝 Input Data Kandidat</h2>", unsafe_allow_html=True)
-    col1, col2 = st.columns([2,1])
-    with col1:
-        nama = st.text_input("Nama Kandidat")
-        education_level = st.selectbox("Education Level", [1,2,3,4],
-            format_func=lambda x: {1:"High School",2:"Bachelor",3:"Master",4:"PhD"}[x])
-        experience_years = st.number_input("Experience Years", 0, 40)
-        recruitment_strategy = st.selectbox("Recruitment Strategy", ['Referral','Job Fair','Outsourcing'])
-        interview_score = st.slider("Interview Score", 0, 100, 50)
-        skill_score = st.slider("Skill Score", 0, 100, 50)
-        personality_score = st.slider("Personality Score", 0, 100, 50)
-    with col2:
-        st.markdown("""
-        <div class="instruction-box">
-            <b>Petunjuk:</b><br>
-            - Isi semua data kandidat.<br>
-            - Skor: 0 (rendah) — 100 (tinggi).<br>
-            - Pilih strategi rekrutmen.<br>
-            - Klik <b>Prediksi</b> untuk melihat hasil.<br>
-        </div>
-        """, unsafe_allow_html=True)
-
-    col_pred, col_hist = st.columns([1,1])
-    with col_pred:
-        prediksi_btn = st.button("Prediksi")
-    with col_hist:
-        if st.button("Riwayat"):
-            st.session_state.page = "riwayat"
-
-    if prediksi_btn and model and scaler:
-        input_data = {
-            'EducationLevel': education_level,
-            'ExperienceYears': experience_years,
-            'InterviewScore': interview_score,
-            'SkillScore': skill_score,
-            'PersonalityScore': personality_score,
-            'RecruitmentStrategy': recruitment_strategy
-        }
-        processed_input = preprocess_input(input_data, scaler)
-        prediction_proba = model.predict_proba(processed_input)[0]
-        prob_accept = prediction_proba[1] * 100
-        threshold = 61.0
-        prediction = 1 if prob_accept >= threshold else 0
-        st.session_state.history.append({
-            "Nama": nama,
-            "Probabilitas": prob_accept,
-            "Status": "Diterima" if prediction == 1 else "Tidak Diterima"
-        })
-        save_history()
-
-        st.markdown(f"""
-        <div style="text-align:center; background:linear-gradient(to right,#2b1e77,#6a0dad);
-                    color:white; padding:14px; border-radius:12px; font-size:28px; font-weight:bold;">
-            <i class="fas fa-chart-line"></i> Hasil Prediksi
-        </div>
-        """, unsafe_allow_html=True)
-
-        col_left, col_right = st.columns([1,2])
-        with col_left:
-            st.markdown(f"""
-            <div class="result-box" style="font-size:22px;">
-                <b>Probabilitas Diterima</b><br>{prob_accept:.2f}%
-            </div>
-            """, unsafe_allow_html=True)
-            if prediction == 1:
-                st.markdown("""<div class="result-box" style="font-size:22px; color:lightgreen;">✅ Diterima</div>""", unsafe_allow_html=True)
-            else:
-                st.markdown("""<div class="result-box" style="font-size:22px; color:#ff6b6b;">❌ Tidak Diterima</div>""", unsafe_allow_html=True)
-        with col_right:
-            fig = go.Figure(go.Indicator(
-                mode="gauge+number",
-                value=prob_accept,
-                title={'text':"Probabilitas Diterima",'font':{'size':22}},
-                number={'valueformat':'.2f','suffix':"%",'font':{'size':42}},
-                gauge={'axis':{'range':[0,100]},
-                       'bar':{'color':ACCENT_COLOR},
-                       'steps':[{'range':[0,61],'color':"#FADBD8"},{'range':[61,100],'color':"#D8F4D7"}]}
-            ))
-            fig.update_layout(height=550, width=850)
-            st.plotly_chart(fig, use_container_width=True)
-
-# ===================== Halaman Riwayat =====================
-elif st.session_state.page == "riwayat":
     st.markdown("""
-    <div style="text-align:center; background:linear-gradient(to right,#2b1e77,#6a0dad);
-                color:white; padding:14px; border-radius:12px; font-size:28px; font-weight:bold; margin-bottom:10px;">
-        <i class="fas fa-history"></i> Riwayat
+    <div class="instruction-box">
+    Threshold diterima  : 61% <br>
+    Model               : Catboost Optuna  <br>
+    F1-Score            : 0.913
     </div>
     """, unsafe_allow_html=True)
 
-    # Tabel Riwayat
-    if len(st.session_state.history) == 0:
-        st.info("📭 Belum ada riwayat prediksi.")
+    st.markdown("""
+    <div class="instruction-box">
+    File CSV harus berisi kolom:<br>
+    - Name<br>
+    - EducationLevel<br>
+    - ExperienceYears<br>
+    - InterviewScore<br>
+    - SkillScore<br>
+    - PersonalityScore<br>
+    - RecruitmentStrategy
+    </div>
+    """, unsafe_allow_html=True)
+
+    uploaded_file = st.file_uploader("Upload File CSV", type=['csv'])
+    if uploaded_file:
+        df_input = pd.read_csv(uploaded_file)
+        st.session_state.df_input = df_input
+        st.info(f"Total data: {len(df_input)} baris")
+        st.dataframe(df_input.head(10))
+
+        if st.button("Prediksi"):
+            if model and scaler:
+                df_pred = df_input.copy()
+                processed = preprocess_input(df_pred, scaler)
+                processed = processed[['EducationLevel','ExperienceYears','InterviewScore','SkillScore','PersonalityScore',
+                                       'TotalScore','RecruitmentStrategy_1','RecruitmentStrategy_2','RecruitmentStrategy_3',
+                                       'Skill_Experience_Interaction']]
+                prob = model.predict_proba(processed)[:,1]*100
+                df_pred['Probability'] = prob
+                df_pred['Status'] = np.where(prob>=61,"Diterima","Tidak Diterima")
+                st.session_state.pred_df = df_pred
+                st.success("Prediksi selesai. Lihat halaman 'Prediksi'.")
+
+# ===================== Halaman Prediksi =====================
+elif page == "Prediksi":
+    st.markdown("<h2 style='text-align:center; background:linear-gradient(to right,#2b1e77,#6a0dad); color:white; padding:12px; border-radius:12px; margin-bottom:15px;'><i class='fas fa-chart-line'></i> Hasil Prediksi</h2>", unsafe_allow_html=True)
+
+    if "pred_df" in st.session_state:
+        df_pred = st.session_state.pred_df
+        preview_df = df_pred.head(15).copy()
+        preview_df_display = preview_df.drop(columns=['RecruitmentStrategy_1','RecruitmentStrategy_2','RecruitmentStrategy_3','Skill_Experience_Interaction'])
+        preview_df_display['Status'] = preview_df_display['Status'].apply(
+            lambda x: f"<span style='color:green;font-weight:bold;'>{x}</span>" if x=="Diterima"
+                      else f"<span style='color:red;font-weight:bold;'>{x}</span>"
+        )
+        st.markdown(preview_df_display.to_html(escape=False, index=False), unsafe_allow_html=True)
+
+        csv = df_pred.to_csv(index=False).encode('utf-8')
+        st.download_button("⬇ Download Hasil Prediksi", data=csv, file_name="hasil_prediksi.csv", mime="text/csv")
+
+        top10 = df_pred.sort_values(by="Probability", ascending=False).head(10).copy()
+        top10_display = top10[['Name','EducationLevel','ExperienceYears','RecruitmentStrategy','TotalScore','Probability','Status']]
+        top10_display['Status'] = top10_display['Status'].apply(
+            lambda x: f"<span style='color:green;font-weight:bold;'>{x}</span>" if x=="Diterima"
+                      else f"<span style='color:red;font-weight:bold;'>{x}</span>"
+        )
+        st.markdown("<h3 style='margin-top:20px;'>Top 10 Kandidat Berdasarkan Probability</h3>", unsafe_allow_html=True)
+        st.markdown(top10_display.to_html(escape=False, index=False), unsafe_allow_html=True)
+
     else:
-        df_history = pd.DataFrame(st.session_state.history).sort_values(by="Probabilitas", ascending=False).reset_index(drop=True)
-        header_cols = st.columns([3,2,2,0.5])
-        header_cols[0].markdown("<div class='tbl-header'>Nama</div>", unsafe_allow_html=True)
-        header_cols[1].markdown("<div class='tbl-header'>Probabilitas</div>", unsafe_allow_html=True)
-        header_cols[2].markdown("<div class='tbl-header'>Status</div>", unsafe_allow_html=True)
-        header_cols[3].markdown("", unsafe_allow_html=True)
+        st.info("⚠ Belum ada data prediksi. Silakan lakukan upload dan prediksi di halaman Input Data.")
 
-        for i, row in df_history.iterrows():
-            col1, col2, col3, col4 = st.columns([3,2,2,0.5])
-            col1.markdown(f"<div class='tbl-cell'>{row['Nama']}</div>", unsafe_allow_html=True)
-            col2.markdown(f"<div class='tbl-cell'>{row['Probabilitas']:.2f}%</div>", unsafe_allow_html=True)
-            col3.markdown(f"<div class='tbl-cell'>{row['Status']}</div>", unsafe_allow_html=True)
-            with col4:
-                if st.button("🗑", key=f"hapus_{i}"):
-                    st.session_state.history.pop(i)
-                    save_history()
+# ===================== Halaman EDA =====================
+elif page == "EDA":
+    st.markdown("<h2 style='text-align:center; background:linear-gradient(to right,#2b1e77,#6a0dad); color:white; padding:12px; border-radius:12px;'><i class='fas fa-chart-pie'></i> Exploratory Data Analysis</h2>", unsafe_allow_html=True)
 
-        # Tombol Download
-        df_download = pd.DataFrame(st.session_state.history)
-        csv = df_download.to_csv(index=False).encode('utf-8')
-        st.download_button("⬇ Download History", data=csv, file_name="history.csv", mime="text/csv")
+    if "pred_df" in st.session_state and "df_input" in st.session_state:
+        df_eda_pred = st.session_state.pred_df.copy()
+        df_eda_orig = st.session_state.df_input.copy()
+        df_eda_orig['Probability'] = df_eda_pred['Probability']
+        df_eda_orig['Status'] = df_eda_pred['Status']
 
-    # Tombol Back & Clear
-    col_back, col_mid, col_clear = st.columns([1,13,1])
-    with col_back:
-        if st.button("Back"):
-            st.session_state.page = "main"
-    with col_clear:
-        if st.button("Clear"):
-            st.session_state.history = []
-            save_history()
+        # Pie Charts
+        status_counts = df_eda_orig['Status'].value_counts().reset_index()
+        status_counts.columns = ['Status','Count']
+        fig_status = px.pie(status_counts, names='Status', values='Count',
+                            color='Status',
+                            color_discrete_map={'Diterima':'#4682B4','Tidak Diterima':'#89CFF0'},
+                            title='Distribusi Status Kandidat')
+        st.plotly_chart(fig_status)
 
+        rec_counts = df_eda_orig['RecruitmentStrategy'].map({1:'Referral',2:'Job Fair',3:'Outsourcing'}).value_counts().reset_index()
+        rec_counts.columns = ['RecruitmentStrategy','Count']
+        fig_rec = px.pie(rec_counts, names='RecruitmentStrategy', values='Count',
+                         color_discrete_sequence=["#336289",'#4682B4','#89CFF0'],
+                         title='Distribusi Recruitment Strategy')
+        st.plotly_chart(fig_rec)
 
+        edu_counts = df_eda_orig['EducationLevel'].map({1:'High School',2:'Bachelor',3:'Master',4:'PhD'}).value_counts().reset_index()
+        edu_counts.columns = ['EducationLevel','Count']
+        fig_edu = px.pie(edu_counts, names='EducationLevel', values='Count',
+                         color_discrete_sequence=["#284F6E", "#336289",'#4682B4','#89CFF0'],
+                         title='Distribusi Education Level')
+        st.plotly_chart(fig_edu)
+
+        # Histogram numeric asli
+        numeric_cols = ['ExperienceYears','InterviewScore','SkillScore','PersonalityScore']
+        df_eda_orig['TotalScore'] = df_eda_orig['SkillScore'] + df_eda_orig['InterviewScore'] + df_eda_orig['PersonalityScore']
+        numeric_cols.append('TotalScore')
+        for col in numeric_cols:
+            fig_bar = px.histogram(df_eda_orig, x=col, color_discrete_sequence=['#4682B4'], title=f'Distribusi {col}')
+            st.plotly_chart(fig_bar)
+
+    else:
+        st.info("⚠ Belum ada data untuk EDA. Silakan lakukan prediksi terlebih dahulu di halaman Input Data.")
